@@ -3,10 +3,10 @@ pipeline {
 
     environment {
         // --- KONFIGURASI ACR ---
-        REGISTRY_URL   = 'tambalfinderr.azurecr.io'
-        IMAGE_NAME     = 'tambalfinder'
+        REGISTRY_URL   = 'fitmealapp.azurecr.io'
+        IMAGE_NAME     = 'fitmeal'
         // Credential ID dari Jenkins untuk Login Docker
-        DOCKER_CRED_ID = 'TambalFinderr'
+        DOCKER_CRED_ID = 'fitmealapp'
 
         // --- KONFIGURASI WEBHOOK (RAHASIA DEPLOYMENT) ---
         // PENTING: Gunakan tanda kutip SATU ('...') agar tanda $ tidak dianggap variabel oleh Jenkins
@@ -26,7 +26,6 @@ pipeline {
                     echo '--- Building Docker Image ---'
                     // Build dengan tag 'latestjens' dan nomor build
                     bat "docker build -t %REGISTRY_URL%/%IMAGE_NAME%:latestjens ."
-                    bat "docker build -t %REGISTRY_URL%/%IMAGE_NAME%:%BUILD_NUMBER% ."
                 }
             }
         }
@@ -47,7 +46,6 @@ pipeline {
                 script {
                     echo '--- Pushing Image to ACR ---'
                     bat "docker push %REGISTRY_URL%/%IMAGE_NAME%:latestjens"
-                    bat "docker push %REGISTRY_URL%/%IMAGE_NAME%:%BUILD_NUMBER%"
                 }
             }
         }
@@ -74,7 +72,6 @@ pipeline {
             echo '--- Cleaning Up ---'
             bat "docker logout %REGISTRY_URL%"
             bat "docker rmi %REGISTRY_URL%/%IMAGE_NAME%:latestjens || exit 0"
-            bat "docker rmi %REGISTRY_URL%/%IMAGE_NAME%:%BUILD_NUMBER% || exit 0"
         }
     }
 }
