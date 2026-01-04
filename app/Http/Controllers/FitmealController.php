@@ -61,16 +61,25 @@ class FitmealController extends Controller {
         $prof = json_decode($user->profile_data);
         $userBmr = $prof->bmr ?? 1500;
 
-        $allPlans = DB::table('daily_plans')->whereDate('plan_date', now())->get();
+        // PERBAIKAN: Ambil semua plan tanpa filter tanggal yang kaku agar menu tidak kosong
+        $allPlans = DB::table('daily_plans')->get();
 
-        // Filter otomatis berdasarkan kategori BMR user
+        // Filter otomatis berdasarkan kategori BMR user + Tambahkan Shuffle agar menu berganti
         if ($userBmr <= 1600) {
-            $nutritionPlans = $allPlans->where('type', 'nutrition')->where('calories', '<=', 500)->take(20);
+            $nutritionPlans = $allPlans->where('type', 'nutrition')
+                                       ->where('calories', '<=', 500)
+                                       ->shuffle()
+                                       ->take(20);
         } else {
-            $nutritionPlans = $allPlans->where('type', 'nutrition')->where('calories', '>', 500)->take(20);
+            $nutritionPlans = $allPlans->where('type', 'nutrition')
+                                       ->where('calories', '>', 500)
+                                       ->shuffle()
+                                       ->take(20);
         }
 
         $workoutPlans = $allPlans->where('type', 'workout')->shuffle()->take(10);
+
+        // Gabungkan hasil
         $plans = $nutritionPlans->merge($workoutPlans);
 
         return view('dashboard', compact('user', 'plans'));
@@ -79,24 +88,32 @@ class FitmealController extends Controller {
     // --- BMI CALCULATION ---
     public function bmi(Request $req) {
         $req->validate(['weight' => 'required|numeric', 'height' => 'required|numeric']);
+
         $tb = $req->height / 100;
         $bmi = $req->weight / ($tb * $tb);
+
+        // Rumus Mifflin-St Jeor
         $bmr = (10 * $req->weight) + (6.25 * $req->height) - (5 * 25) + 5;
 
         $protein = ($bmr * 0.25) / 4;
         $karbo = ($bmr * 0.50) / 4;
         $lemak = ($bmr * 0.25) / 9;
 
+        // Update profile data ke database
         Auth::user()->update(['profile_data' => json_encode([
             'weight' => $req->weight,
             'height' => $req->height,
             'bmi' => number_format($bmi, 1),
             'bmr' => round($bmr),
             'nutrisi' => [
-                'protein' => round($protein, 1), 'karbo' => round($karbo, 1), 'lemak' => round($lemak, 1)
+                'protein' => round($protein, 1),
+                'karbo' => round($karbo, 1),
+                'lemak' => round($lemak, 1)
             ]
         ])]);
-        return back()->with('success', 'Data Nutrisi Berhasil Diperbarui!');
+
+        // PERBAIKAN: Redirect ke dashboard agar query menu baru dijalankan ulang
+        return redirect('/dashboard')->with('success', 'Kalkulasi Berhasil! Menu Anda telah diperbarui.');
     }
 
     // --- PAYMENT ---
@@ -135,12 +152,11 @@ class FitmealController extends Controller {
         }
     }
 
-    // --- ADMIN PANEL (UPDATED) ---
+    // --- ADMIN PANEL ---
     public function admin() {
         $users = User::where('role', 'user')->get();
         $plans = DB::table('daily_plans')->orderBy('created_at', 'desc')->get();
 
-        // AMBIL DATA REAL UNTUK GRAFIK (7 Hari Terakhir)
         $visitors = DB::table('visitor_logs')
             ->select('visit_date', DB::raw('count(*) as total'))
             ->where('visit_date', '>=', now()->subDays(6))
@@ -158,9 +174,9 @@ class FitmealController extends Controller {
 
     public function storePlan(Request $req) {
         DB::table('daily_plans')->insert([
-            'plan_date' => now(), // Otomatis tanggal hari ini
+            'plan_date' => now(),
             'type' => $req->type,
-            'category' => $req->category, // low, ideal, high
+            'category' => $req->category,
             'title' => $req->title,
             'description' => $req->description,
             'calories' => $req->calories,

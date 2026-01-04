@@ -1,0 +1,80 @@
+pipeline {
+    agent any
+
+    environment {
+        // --- KONFIGURASI ACR ---
+        REGISTRY_URL   = 'tambalfinderr.azurecr.io'
+        IMAGE_NAME     = 'tambalfinder'
+        // Credential ID dari Jenkins untuk Login Docker
+        DOCKER_CRED_ID = 'TambalFinderr'
+
+        // --- KONFIGURASI WEBHOOK (RAHASIA DEPLOYMENT) ---
+        // PENTING: Gunakan tanda kutip SATU ('...') agar tanda $ tidak dianggap variabel oleh Jenkins
+        AZURE_WEBHOOK_URL = 'https://$TambalFinderr:S7x3L1zxHC0suix51Jv96gchABGDqi4HZLsihtgWdbfoi51W0rPPR42Z9M3l@tambalfinderr.scm.azurewebsites.net/api/registry/webhook'
+    }
+
+    stages {
+        stage('Checkout Code') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    echo '--- Building Docker Image ---'
+                    // Build dengan tag 'latestjens' dan nomor build
+                    bat "docker build -t %REGISTRY_URL%/%IMAGE_NAME%:latestjens ."
+                    bat "docker build -t %REGISTRY_URL%/%IMAGE_NAME%:%BUILD_NUMBER% ."
+                }
+            }
+        }
+
+        stage('Login to ACR') {
+            steps {
+                script {
+                    echo '--- Logging in to Azure Container Registry ---'
+                    withCredentials([usernamePassword(credentialsId: DOCKER_CRED_ID, usernameVariable: 'ACR_USER', passwordVariable: 'ACR_PASS')]) {
+                        bat "docker login %REGISTRY_URL% -u %ACR_USER% -p %ACR_PASS%"
+                    }
+                }
+            }
+        }
+
+        stage('Push Image') {
+            steps {
+                script {
+                    echo '--- Pushing Image to ACR ---'
+                    bat "docker push %REGISTRY_URL%/%IMAGE_NAME%:latestjens"
+                    bat "docker push %REGISTRY_URL%/%IMAGE_NAME%:%BUILD_NUMBER%"
+                }
+            }
+        }
+
+        // --- STAGE DEPLOY YANG SUDAH DIPERBAIKI (METODE WEBHOOK) ---
+        stage('Deploy to Azure Web App') {
+            steps {
+                script {
+                    echo "--- Triggering Deployment via Webhook ---"
+                    echo "Mengirim sinyal ke Azure untuk menarik image terbaru..."
+
+                    // Kita menggunakan CURL untuk memanggil URL Webhook
+                    // Ini tidak memerlukan login 'az account' atau instalasi Azure CLI
+                    // Azure akan otomatis Pull Image & Restart setelah menerima sinyal ini
+                    bat "curl -X POST \"${AZURE_WEBHOOK_URL}\""
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            // Bersihkan image lokal untuk hemat space harddisk server
+            echo '--- Cleaning Up ---'
+            bat "docker logout %REGISTRY_URL%"
+            bat "docker rmi %REGISTRY_URL%/%IMAGE_NAME%:latestjens || exit 0"
+            bat "docker rmi %REGISTRY_URL%/%IMAGE_NAME%:%BUILD_NUMBER% || exit 0"
+        }
+    }
+}
