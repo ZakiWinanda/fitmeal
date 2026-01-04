@@ -6,7 +6,7 @@ pipeline {
         REGISTRY_URL   = 'fitmealapp.azurecr.io'
         IMAGE_NAME     = 'fitmeal'
         // Credential ID dari Jenkins untuk Login Docker
-        DOCKER_CRED_ID = 'fitmealapp'
+        DOCKER_CRED_ID = 'fitmealapp.azurecr.io'
 
         // --- KONFIGURASI WEBHOOK (RAHASIA DEPLOYMENT) ---
         // PENTING: Gunakan tanda kutip SATU ('...') agar tanda $ tidak dianggap variabel oleh Jenkins
