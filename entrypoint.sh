@@ -16,8 +16,8 @@ chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 # --- BAGIAN 2.5: SETTING URL BARU ---
 # =================================================================
 # Export variabel ini AGAR TERBACA oleh perintah cache di bawah
-export APP_URL="https://tambalfinderr.azurewebsites.net"
-export ASSET_URL="https://tambalfinderr.azurewebsites.net"
+export APP_URL="https://fitmeall.azurewebsites.net"
+export ASSET_URL="https://fitmeall.azurewebsites.net"
 export APP_ENV=production
 export SCHEME=https
 
