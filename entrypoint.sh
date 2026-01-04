@@ -51,4 +51,4 @@ php artisan storage:link
 
 # --- BAGIAN 5: START SERVER ---
 service ssh start
-apache2-foreground
+exec apache2-foreground
