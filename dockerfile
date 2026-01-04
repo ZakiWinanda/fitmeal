@@ -1,10 +1,8 @@
-# Gunakan image PHP Apache
 FROM php:8.3-apache
 
 WORKDIR /var/www/html
 
-# 1. Install Library System + Node.js (TAMBAHAN PENTING)
-# Kita perlu Node.js untuk compile CSS (npm run build)
+# 1. Install Library System, Node.js, dan dos2unix
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -15,6 +13,7 @@ RUN apt-get update && apt-get install -y \
     libzip-dev \
     openssh-server \
     gnupg \
+    dos2unix \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
     && docker-php-ext-install pdo pdo_mysql zip mbstring \
@@ -39,22 +38,19 @@ RUN composer install \
 # 3. Copy Semua Source Code
 COPY . .
 
-# 4. BUILD ASSETS (BAGIAN YANG HILANG SEBELUMNYA)
-# Ini akan membuat folder public/build yang berisi CSS/JS
-RUN npm install
-RUN npm run build
+# 4. Build Assets (Vite/Mix)
+RUN npm install && npm run build
 
-# 5. Permission & Entrypoint
+# 5. Permission & Entrypoint Setup
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 775 storage bootstrap/cache
 
+# Copy entrypoint dan bersihkan format file dari karakter Windows
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
-
-# Tambahkan baris ini untuk fix masalah CRLF dari Windows secara otomatis saat build
-RUN sed -i 's/\r$//' /usr/local/bin/entrypoint.sh && \
+RUN dos2unix /usr/local/bin/entrypoint.sh && \
     chmod +x /usr/local/bin/entrypoint.sh
 
 EXPOSE 80
 
-# Gunakan path absolut untuk entrypoint
+# Gunakan path absolut
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
