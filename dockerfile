@@ -48,8 +48,13 @@ RUN npm run build
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 775 storage bootstrap/cache
 
-COPY entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/entrypoint.sh
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+
+# Tambahkan baris ini untuk fix masalah CRLF dari Windows secara otomatis saat build
+RUN sed -i 's/\r$//' /usr/local/bin/entrypoint.sh && \
+    chmod +x /usr/local/bin/entrypoint.sh
 
 EXPOSE 80
-ENTRYPOINT ["entrypoint.sh"]
+
+# Gunakan path absolut untuk entrypoint
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
