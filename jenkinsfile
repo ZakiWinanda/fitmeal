@@ -26,6 +26,7 @@ pipeline {
                     echo '--- Building Docker Image ---'
                     // Build dengan tag 'latestjens' dan nomor build
                     bat "docker build -t %REGISTRY_URL%/%IMAGE_NAME%:latestjens ."
+                    bat "docker build -t %REGISTRY_URL%/%IMAGE_NAME%:%BUILD_NUMBER% ."
                 }
             }
         }
@@ -46,6 +47,7 @@ pipeline {
                 script {
                     echo '--- Pushing Image to ACR ---'
                     bat "docker push %REGISTRY_URL%/%IMAGE_NAME%:latestjens"
+                    bat "docker push %REGISTRY_URL%/%IMAGE_NAME%:%BUILD_NUMBER%"
                 }
             }
         }
@@ -72,6 +74,7 @@ pipeline {
             echo '--- Cleaning Up ---'
             bat "docker logout %REGISTRY_URL%"
             bat "docker rmi %REGISTRY_URL%/%IMAGE_NAME%:latestjens || exit 0"
+            bat "docker rmi %REGISTRY_URL%/%IMAGE_NAME%:%BUILD_NUMBER% || exit 0"
         }
     }
 }
