@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 # --- BAGIAN 1: PERSIAPAN FOLDER ---
 mkdir -p /var/www/html/storage/app/public
