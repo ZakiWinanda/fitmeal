@@ -50,5 +50,5 @@ php artisan storage:link
 # php artisan migrate --force
 
 # --- BAGIAN 5: START SERVER ---
-service ssh start
+echo "Starting Server..."
 exec apache2-foreground
