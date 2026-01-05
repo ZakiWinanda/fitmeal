@@ -46,7 +46,6 @@ class FitmealController extends Controller {
         $user = Auth::user();
         if ($user->role === 'admin') return redirect('/admin');
 
-        // Logika Auto-Premium Testing
         if ($request->query('status_code') == '200' || $request->query('transaction_status') == 'settlement') {
             $user->update([
                 'is_subscribed' => true,
@@ -61,10 +60,8 @@ class FitmealController extends Controller {
         $prof = json_decode($user->profile_data);
         $userBmr = $prof->bmr ?? 1500;
 
-        // PERBAIKAN: Ambil semua plan tanpa filter tanggal yang kaku agar menu tidak kosong
         $allPlans = DB::table('daily_plans')->get();
 
-        // Filter otomatis berdasarkan kategori BMR user + Tambahkan Shuffle agar menu berganti
         if ($userBmr <= 1600) {
             $nutritionPlans = $allPlans->where('type', 'nutrition')
                                        ->where('calories', '<=', 500)
@@ -78,11 +75,26 @@ class FitmealController extends Controller {
         }
 
         $workoutPlans = $allPlans->where('type', 'workout')->shuffle()->take(10);
-
-        // Gabungkan hasil
         $plans = $nutritionPlans->merge($workoutPlans);
 
         return view('dashboard', compact('user', 'plans'));
+    }
+
+    // --- FITUR EDIT PROFIL MANDIRI (BARU) ---
+    public function updateProfile(Request $request) {
+        $user = Auth::user();
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+        ]);
+
+        $user->update([
+            'name' => $request->name,
+            'email' => $request->email,
+        ]);
+
+        return back()->with('success', 'Profil Anda berhasil diperbarui!');
     }
 
     // --- BMI CALCULATION ---
@@ -91,15 +103,12 @@ class FitmealController extends Controller {
 
         $tb = $req->height / 100;
         $bmi = $req->weight / ($tb * $tb);
-
-        // Rumus Mifflin-St Jeor
         $bmr = (10 * $req->weight) + (6.25 * $req->height) - (5 * 25) + 5;
 
         $protein = ($bmr * 0.25) / 4;
         $karbo = ($bmr * 0.50) / 4;
         $lemak = ($bmr * 0.25) / 9;
 
-        // Update profile data ke database
         Auth::user()->update(['profile_data' => json_encode([
             'weight' => $req->weight,
             'height' => $req->height,
@@ -112,7 +121,6 @@ class FitmealController extends Controller {
             ]
         ])]);
 
-        // PERBAIKAN: Redirect ke dashboard agar query menu baru dijalankan ulang
         return redirect('/dashboard')->with('success', 'Kalkulasi Berhasil! Menu Anda telah diperbarui.');
     }
 
