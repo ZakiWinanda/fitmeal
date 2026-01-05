@@ -1,5 +1,4 @@
 #!/bin/bash
-set -e
 
 # --- BAGIAN 1: PERSIAPAN FOLDER ---
 mkdir -p /var/www/html/storage/app/public
@@ -17,8 +16,8 @@ chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 # --- BAGIAN 2.5: SETTING URL BARU ---
 # =================================================================
 # Export variabel ini AGAR TERBACA oleh perintah cache di bawah
-export APP_URL="https://fitmeall.azurewebsites.net"
-export ASSET_URL="https://fitmeall.azurewebsites.net"
+export APP_URL="https://tambalfinderr.azurewebsites.net"
+export ASSET_URL="https://tambalfinderr.azurewebsites.net"
 export APP_ENV=production
 export SCHEME=https
 
@@ -50,5 +49,5 @@ php artisan storage:link
 # php artisan migrate --force
 
 # --- BAGIAN 5: START SERVER ---
-echo "Starting Server..."
-exec apache2-foreground
+service ssh start
+apache2-foreground
