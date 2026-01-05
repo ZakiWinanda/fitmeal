@@ -4,16 +4,36 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash; // Penting untuk enkripsi password
+use App\Models\User; // Penting untuk model User
 use Carbon\Carbon;
 
 class MegaPlanSeeder extends Seeder
 {
-    public function run()
+    /**
+     * Run the database seeds.
+     */
+    public function run(): void
     {
+        // --- BAGIAN 1: AKUN ADMIN ---
+        // Membuat atau memperbarui akun admin secara otomatis
+        User::updateOrCreate(
+            ['email' => 'admin@fitmeall.com'], // Cari berdasarkan email
+            [
+                'name' => 'Administrator FitMeAll',
+                'password' => Hash::make('AdminFitMeAll2026!'), // Password Anda
+                'role' => 'admin',
+                'email_verified_at' => now(), // Opsional: Langsung verifikasi
+            ]
+        );
+
+        // --- BAGIAN 2: DATA PLAN (MENU & OLAHRAGA) ---
+        // Kosongkan tabel daily_plans sebelum mengisi ulang (menghindari duplikat)
         DB::table('daily_plans')->truncate();
+        
         $data = [];
 
-        // 20 Menu Makanan Nyata (Campuran Kalori Rendah & Tinggi)
+        // 20 Menu Makanan Nyata
         $mealData = [
             ['title' => 'Salad Ayam Lemon', 'cal' => 350, 'instr' => 'Bahan: Dada ayam 150g, selada, tomat, lemon. Cara: Panggang ayam dengan sedikit lada. Potong sayuran, campurkan perasan lemon dan 1 sdt olive oil sebagai dressing.'],
             ['title' => 'Oatmeal Pisang Kayu Manis', 'cal' => 320, 'instr' => 'Bahan: 50g Oat, 1 pisang, bubuk kayu manis. Cara: Rebus oat dengan air/susu rendah lemak. Tambahkan irisan pisang dan taburkan bubuk kayu manis di atasnya.'],
@@ -25,7 +45,6 @@ class MegaPlanSeeder extends Seeder
             ['title' => 'Nasi Kebuli Kambing Fit', 'cal' => 880, 'instr' => 'Bahan: Nasi basmati, daging kambing tanpa lemak. Cara: Masak nasi dengan rempah kebuli. Rebus kambing hingga empuk, lalu panggang sebentar sebelum disajikan.'],
             ['title' => 'Grilled Salmon & Quinoa', 'cal' => 680, 'instr' => 'Bahan: Salmon 150g, Quinoa 100g, Alpukat. Cara: Panggang salmon sisi kulit hingga krispi. Sajikan di atas quinoa rebus dengan irisan alpukat segar.'],
             ['title' => 'Beef Teriyaki Bowl', 'cal' => 720, 'instr' => 'Bahan: Beef slice, saus teriyaki low sodium, wijen. Cara: Tumis daging cepat dengan sedikit saus. Sajikan di atas nasi hangat dengan taburan wijen sangrai.'],
-            // ... (Tambahkan hingga 20 menu dengan pola serupa)
         ];
 
         // 20 Menu Olahraga Nyata
@@ -35,10 +54,9 @@ class MegaPlanSeeder extends Seeder
             ['title' => 'Jogging Outdoor', 'cal' => 350, 'instr' => 'Panduan: Mulai dengan jalan santai 5 menit. Lari dengan kecepatan stabil (pace 7-8) selama 30 menit. Akhiri dengan pendinginan.'],
             ['title' => 'Latihan Beban Dada', 'cal' => 420, 'instr' => 'Panduan: Dumbbell Bench Press 4 set x 12 repetisi. Fokus pada kontraksi otot dada saat mendorong beban ke atas.'],
             ['title' => 'Squat & Lunges Combo', 'cal' => 380, 'instr' => 'Panduan: 15 Squat diikuti 10 Lunges per kaki. Lakukan 3 set. Fokus pada punggung tegak dan lutut tidak melewati jari kaki.'],
-            // ... (Tambahkan hingga 20 olahraga dengan pola serupa)
         ];
 
-        // Generate data secara otomatis
+        // Looping untuk Nutrisi
         for ($i = 0; $i < 20; $i++) {
             $meal = $mealData[$i % count($mealData)];
             $data[] = [
@@ -48,10 +66,12 @@ class MegaPlanSeeder extends Seeder
                 'calories' => $meal['cal'],
                 'instructions' => $meal['instr'],
                 'plan_date' => Carbon::today(),
-                'created_at' => now()
+                'created_at' => now(),
+                'updated_at' => now(),
             ];
         }
 
+        // Looping untuk Olahraga
         for ($j = 0; $j < 20; $j++) {
             $work = $workoutData[$j % count($workoutData)];
             $data[] = [
@@ -61,10 +81,12 @@ class MegaPlanSeeder extends Seeder
                 'calories' => $work['cal'],
                 'instructions' => $work['instr'],
                 'plan_date' => Carbon::today(),
-                'created_at' => now()
+                'created_at' => now(),
+                'updated_at' => now(),
             ];
         }
 
+        // Simpan data ke tabel
         DB::table('daily_plans')->insert($data);
     }
 }
