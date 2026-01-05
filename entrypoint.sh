@@ -11,40 +11,40 @@ mkdir -p storage/app/public \
          storage/logs \
          bootstrap/cache
 
-export APP_URL="https://fitmeall.azurewebsites.net"
-export ASSET_URL="https://fitmeall.azurewebsites.net"
+# Gunakan variabel dari Azure Configuration jika tersedia, jika tidak gunakan default ini
+export APP_URL="${APP_URL:-https://fitmeall.azurewebsites.net}"
+export ASSET_URL="${ASSET_URL:-https://fitmeall.azurewebsites.net}"
 export APP_ENV=production
 export SCHEME=https
 
-# --- BAGIAN 2: PEMBERSIHAN CACHE ---
-echo "🧹 Clearing cache..."
+# --- BAGIAN 2: PEMBERSIHAN & OPTIMASI ---
+echo "🧹 Clearing and Building cache..."
 php artisan optimize:clear || true
-rm -f bootstrap/cache/*.php || true
-
-# --- BAGIAN 3: BUILD CACHE BARU ---
-echo "🚀 Building new cache..."
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
-# --- BAGIAN 4: SETUP STORAGE ---
+# --- BAGIAN 3: SETUP STORAGE ---
 php artisan storage:link || true
 
-# --- BAGIAN 5: DATABASE MIGRATION (TAMBAHAN FIX) ---
-# Kita tambahkan cek koneksi agar jika database belum siap, container tidak langsung exit
-echo "Waiting for database connection..."
-# Mencoba migrasi dengan --force karena ini di lingkungan production (Azure)
-# Menggunakan || true agar jika gagal (misal DB belum dibuat), Apache tetap berusaha jalan
-php artisan migrate --force || echo "⚠️ Migration failed, check if database exists and credentials are correct."
+# --- BAGIAN 4: DATABASE MIGRATION & SEEDER (SOLUSI MENU KOSONG) ---
+echo "⌛ Waiting for database connection..."
+# Menjalankan migrasi
+php artisan migrate --force || echo "⚠️ Migration failed"
 
-# --- BAGIAN 6: PERMISSION FIX ---
+# Menjalankan Seeder otomatis agar Menu & Program Latihan muncul
+# Perintah ini hanya akan mengisi data jika tabel masih kosong (tergantung logika Seeder Anda)
+echo "🌱 Seeding data for Menu and Exercise Programs..."
+php artisan db:seed --force || echo "⚠️ Seeding failed or already seeded"
+
+# --- BAGIAN 5: PERMISSION FIX ---
 echo "🔒 Fixing permissions..."
 chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
-# --- BAGIAN 7: START SERVER ---
+# --- BAGIAN 6: START SERVICES ---
 echo "✅ Starting services..."
 service ssh start || true
 
-echo "Starting Apache in foreground..."
+echo "Starting Apache..."
 exec apache2-foreground
