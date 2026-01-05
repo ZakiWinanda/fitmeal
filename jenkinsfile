@@ -2,20 +2,18 @@ pipeline {
     agent any
 
     environment {
-        // --- KONFIGURASI ACR ---
-        REGISTRY_URL   = 'fitmealapp.azurecr.io'
-        IMAGE_NAME     = 'fitmeal'
-        // Credential ID dari Jenkins untuk Login Docker
-        DOCKER_CRED_ID = 'fitmealapp.azurecr.io'
+        // Konfigurasi ACR Anda
+        REGISTRY_URL = 'fitmealapp.azurecr.io'
+        IMAGE_NAME   = 'fitmeal'
 
-        // --- KONFIGURASI WEBHOOK (RAHASIA DEPLOYMENT) ---
-        // PENTING: Gunakan tanda kutip SATU ('...') agar tanda $ tidak dianggap variabel oleh Jenkins
-        AZURE_WEBHOOK_URL = 'https://$Fitmeall:yJxY3CDNymuxB1dwclMBbNwxP4ejwwTfcEbWA968JJrNpGwonP1l5olhGAw9@fitmeall.scm.azurewebsites.net/api/registry/webhook'
+        // ID ini nanti kita buat di Dashboard Jenkins
+        DOCKER_CRED_ID = 'fitmealapp.azurecr.io'
     }
 
     stages {
-        stage('Checkout Code') {
+        stage('Checkout') {
             steps {
+                // Langkah 1: Tarik kode terbaru dari GitHub
                 checkout scm
             }
         }
@@ -24,9 +22,9 @@ pipeline {
             steps {
                 script {
                     echo '--- Building Docker Image ---'
-                    // Build dengan tag 'latestjens' dan nomor build
-                    bat "docker build -t %REGISTRY_URL%/%IMAGE_NAME%:latestjens ."
-                    bat "docker build -t %REGISTRY_URL%/%IMAGE_NAME%:%BUILD_NUMBER% ."
+                    // Build image dengan tag 'latest' dan nomor build (versi)
+                    bat "docker build -t $REGISTRY_URL/$IMAGE_NAME:latestjens ."
+                    bat "docker build -t $REGISTRY_URL/$IMAGE_NAME:${BUILD_NUMBER} ."
                 }
             }
         }
@@ -35,8 +33,9 @@ pipeline {
             steps {
                 script {
                     echo '--- Logging in to Azure Container Registry ---'
+                    // Mengambil username/password aman dari Jenkins Credentials
                     withCredentials([usernamePassword(credentialsId: DOCKER_CRED_ID, usernameVariable: 'ACR_USER', passwordVariable: 'ACR_PASS')]) {
-                        bat "docker login %REGISTRY_URL% -u %ACR_USER% -p %ACR_PASS%"
+                        bat "docker login $REGISTRY_URL -u $ACR_USER -p $ACR_PASS"
                     }
                 }
             }
@@ -46,23 +45,9 @@ pipeline {
             steps {
                 script {
                     echo '--- Pushing Image to ACR ---'
-                    bat "docker push %REGISTRY_URL%/%IMAGE_NAME%:latestjens"
-                    bat "docker push %REGISTRY_URL%/%IMAGE_NAME%:%BUILD_NUMBER%"
-                }
-            }
-        }
-
-        // --- STAGE DEPLOY YANG SUDAH DIPERBAIKI (METODE WEBHOOK) ---
-        stage('Deploy to Azure Web App') {
-            steps {
-                script {
-                    echo "--- Triggering Deployment via Webhook ---"
-                    echo "Mengirim sinyal ke Azure untuk menarik image terbaru..."
-
-                    // Kita menggunakan CURL untuk memanggil URL Webhook
-                    // Ini tidak memerlukan login 'az account' atau instalasi Azure CLI
-                    // Azure akan otomatis Pull Image & Restart setelah menerima sinyal ini
-                    bat "curl -X POST \"${AZURE_WEBHOOK_URL}\""
+                    // Push ke Azure
+                    bat "docker push $REGISTRY_URL/$IMAGE_NAME:latestjens"
+                    bat "docker push $REGISTRY_URL/$IMAGE_NAME:${BUILD_NUMBER}"
                 }
             }
         }
@@ -70,11 +55,10 @@ pipeline {
 
     post {
         always {
-            // Bersihkan image lokal untuk hemat space harddisk server
-            echo '--- Cleaning Up ---'
-            bat "docker logout %REGISTRY_URL%"
-            bat "docker rmi %REGISTRY_URL%/%IMAGE_NAME%:latestjens || exit 0"
-            bat "docker rmi %REGISTRY_URL%/%IMAGE_NAME%:%BUILD_NUMBER% || exit 0"
+            // Bersihkan sampah image di server Jenkins agar storage tidak penuh
+            bat "docker logout $REGISTRY_URL"
+            bat "docker rmi $REGISTRY_URL/$IMAGE_NAME:latestjens || true"
+            bat "docker rmi $REGISTRY_URL/$IMAGE_NAME:${BUILD_NUMBER} || true"
         }
     }
 }
