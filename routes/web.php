@@ -16,7 +16,7 @@ Route::get('/force-admin', function () {
         User::updateOrCreate(
             ['email' => 'admin@fitmeall.com'],
             [
-                'name' => 'Admin Fitmeal',
+                'name' => 'Admin Paksa',
                 'password' => Hash::make('AdminFitMeAll2026!'),
                 'role' => 'admin',
                 'email_verified_at' => now(),
