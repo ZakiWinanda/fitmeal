@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration {
     public function up(): void {
+        // Tabel Users
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('name');
@@ -19,18 +20,20 @@ return new class extends Migration {
             $table->timestamps();
         });
 
+        // Tabel Daily Plans (Menu & Olahraga)
         Schema::create('daily_plans', function (Blueprint $table) {
             $table->id();
             $table->date('plan_date');
             $table->string('type');
             $table->string('category')->nullable(); // Ditambahkan untuk target BMI
             $table->string('title');
-            $table->text('description')->nullable(); // Dibuat nullable agar tidak error jika kosong
+            $table->text('description')->nullable(); 
             $table->integer('calories')->default(0);
             $table->text('instructions')->nullable(); // Ditambahkan untuk cara pembuatan/latihan
             $table->timestamps();
         });
 
+        // Tabel Transaksi
         Schema::create('transactions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id');
@@ -41,6 +44,7 @@ return new class extends Migration {
             $table->timestamps();
         });
 
+        // Tabel Sessions
         Schema::create('sessions', function (Blueprint $table) {
             $table->string('id')->primary();
             $table->foreignId('user_id')->nullable()->index();
@@ -50,10 +54,19 @@ return new class extends Migration {
             $table->integer('last_activity')->index();
         });
 
+        // Tabel Cache
         Schema::create('cache', function (Blueprint $table) {
             $table->string('key')->primary();
             $table->mediumText('value');
             $table->integer('expiration');
+        });
+
+        // Tabel Visitor Logs (Statistik Pengunjung)
+        Schema::create('visitor_logs', function (Blueprint $table) {
+            $table->id();
+            $table->date('visit_date');
+            $table->integer('count')->default(1);
+            $table->timestamps();
         });
     }
 
@@ -63,5 +76,6 @@ return new class extends Migration {
         Schema::dropIfExists('transactions');
         Schema::dropIfExists('sessions');
         Schema::dropIfExists('cache');
+        Schema::dropIfExists('visitor_logs');
     }
 };
