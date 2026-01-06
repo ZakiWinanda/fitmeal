@@ -17,15 +17,15 @@ php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
-# --- BAGIAN 3: DATABASE RESET (KHUSUS BUILD INI) ---
-echo "⌛ Resetting Database structure..."
+# --- BAGIAN 3: DATABASE MIGRATION (MODE AMAN) ---
+echo "⌛ Running Migration..."
 
-# KITA GUNAKAN FRESH AGAR STRUKTUR DATABASE DIPERBARUI TOTAL
-php artisan migrate:fresh --seed --force || echo "⚠️ Database reset failed"
+# Gunakan migrate --force (TANPA FRESH) agar data yang sudah ada TIDAK TERHAPUS.
+# Ini hanya akan memperbarui struktur jika ada file migrasi baru di masa depan.
+php artisan migrate --force || echo "⚠️ Migration skipped/failed"
 
-# Jalankan seeder tambahan untuk memastikan aman
-echo "🌱 Running Specific Seeder..."
-php artisan db:seed --class=MegaPlanSeeder --force || echo "⚠️ MegaPlanSeeder failed"
+# Catatan: Kita matikan seeder otomatis di sini agar data tidak ganda.
+# Data sudah aman di database Azure sekarang.
 
 # --- BAGIAN 4: PERMISSION & START ---
 php artisan storage:link || true
