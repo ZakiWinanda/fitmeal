@@ -17,7 +17,7 @@
                     <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Total Hit Hari Ini</p>
                     {{-- Perbaikan: Menggunakan ->last() untuk menghindari error reference --}}
                     <p class="text-4xl font-black text-indigo-600 leading-none mt-2">
-                        {{ $visitorData['data']->last() ?? 0 }}
+                        {{ end($visitorData['data']) ?: 0 }}
                     </p>
                 </div>
             </div>
