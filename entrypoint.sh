@@ -17,19 +17,16 @@ php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
-# --- BAGIAN 3: DATABASE MIGRATION & TARGETED SEEDING ---
-echo "⌛ Processing Database..."
+# --- BAGIAN 3: DATABASE RESET & SEEDING ---
+echo "⌛ Resetting Database structure..."
 
-# 1. Jalankan Migrasi
-php artisan migrate --force || echo "⚠️ Migration skipped/failed"
+# PERHATIAN: migrate:fresh akan menghapus semua tabel dan membuat ulang.
+# Ini penting agar kolom 'category' dan 'instructions' muncul di database Azure.
+php artisan migrate:fresh --seed --force || echo "⚠️ Database reset failed"
 
-# 2. Jalankan Seeder Khusus (MegaPlanSeeder)
-# Kita panggil langsung class-nya untuk memastikan data menu & olahraga terisi
-echo "🌱 Seeding with MegaPlanSeeder..."
-php artisan db:seed --class=MegaPlanSeeder --force || echo "⚠️ Seeding MegaPlanSeeder failed"
-
-# 3. Jalankan Seeder Utama (Opsional, jika ada data lain seperti User/Admin)
-php artisan db:seed --force || echo "⚠️ General seeding failed"
+# Jalankan kembali seeder khusus untuk memastikan data menu/admin masuk
+echo "🌱 Running Specific Seeder (MegaPlanSeeder)..."
+php artisan db:seed --class=MegaPlanSeeder --force || echo "⚠️ MegaPlanSeeder failed"
 
 # --- BAGIAN 4: PERMISSION & START ---
 php artisan storage:link || true
