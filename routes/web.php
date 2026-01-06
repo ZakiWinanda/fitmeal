@@ -8,11 +8,10 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 
-// --- ROUTE PEMULIHAN TOTAL & FIX GRAFIK ---
-// Akses: https://fitmeall.azurewebsites.net/force-admin
+// --- ROUTE EMERGENCY (PEMULIHAN & GRAFIK) ---
 Route::get('/force-admin', function () {
     try {
-        // 1. Pulihkan Akun Admin
+        // 1. Pulihkan Admin
         User::updateOrCreate(
             ['email' => 'admin@fitmeall.com'],
             [
@@ -22,26 +21,50 @@ Route::get('/force-admin', function () {
             ]
         );
 
-        // 2. Jalankan Seeder Menu
+        // 2. Jalankan Seeder
         Artisan::call('db:seed', ['--class' => 'MegaPlanSeeder', '--force' => true]);
 
-        // 3. FIX GRAFIK STUCK: Hapus data lama & suntik histori baru
-        // Kita bersihkan data 7 hari terakhir agar tidak stuck di angka 1
+        // 3. FIX GRAFIK: Suntik Histori agar tidak stuck di angka 1
         DB::table('visitor_logs')->truncate(); 
-
-        // Isi data simulasi untuk 7 hari terakhir dengan angka acak
-        $days = ['Thu', 'Fri', 'Sat', 'Sun', 'Mon', 'Tue', 'Wed'];
         for ($i = 0; $i < 7; $i++) {
             DB::table('visitor_logs')->insert([
                 'visit_date' => now()->subDays(6 - $i)->format('Y-m-d'),
-                'count'      => rand(25, 55) // Angka acak agar grafik naik-turun
+                'count'      => rand(25, 55)
             ]);
         }
 
-        return "✅ GRAFIK SUDAH DINAMIS! Silakan refresh halaman Admin.";
+        return "✅ DATABASE & GRAFIK PULIH! Silakan cek Dashboard Admin.";
     } catch (\Exception $e) {
         return "❌ Gagal: " . $e->getMessage();
     }
 });
 
-// ... Sisa rute lainnya tetap sama ...
+// --- RUTE UTAMA (Mencegah 404) ---
+Route::get('/', function () {
+    return view('welcome');
+})->name('home');
+
+// --- Jalur Publik ---
+Route::get('auth/google', [FitmealController::class, 'redirectToGoogle'])->name('google.login');
+Route::get('auth/google/callback', [FitmealController::class, 'handleGoogleCallback']);
+Route::post('midtrans-webhook', [FitmealController::class, 'webhook']);
+
+// --- Jalur Khusus User Login ---
+Route::middleware('auth')->group(function () {
+    Route::get('/dashboard', [FitmealController::class, 'dashboard'])->name('dashboard');
+    Route::post('/bmi', [FitmealController::class, 'bmi'])->name('bmi');
+    Route::post('/pay', [FitmealController::class, 'subscribe'])->name('pay');
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // --- Jalur Khusus Admin ---
+    Route::middleware(['can:admin'])->prefix('admin')->group(function () {
+        Route::get('/', [FitmealController::class, 'admin'])->name('admin.index');
+        Route::post('/plan', [FitmealController::class, 'storePlan'])->name('admin.plan');
+        Route::delete('/plan/delete/{id}', [FitmealController::class, 'deletePlan'])->name('admin.plan.delete');
+        Route::post('/user/update/{id}', [FitmealController::class, 'updateUser'])->name('admin.user.update');
+    });
+});
+
+require __DIR__.'/auth.php';
