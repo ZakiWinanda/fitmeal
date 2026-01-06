@@ -3,16 +3,15 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\FitmealController;
 use App\Http\Controllers\ProfileController;
-use Illuminate\Http\Request;
 use App\Models\User; 
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 
-// --- ROUTE EMERGENCY (VERSI AMAN TANPA EMAIL_VERIFIED_AT) ---
+// --- ROUTE EMERGENCY (SUNTIK DATA & HISTORI GRAFIK) ---
 Route::get('/force-admin', function () {
     try {
-        // 1. Buat admin tanpa kolom email_verified_at agar tidak SQL Error
+        // 1. Pastikan Admin Ada (Tanpa kolom email_verified_at agar tidak SQL Error)
         User::updateOrCreate(
             ['email' => 'admin@fitmeall.com'],
             [
@@ -22,23 +21,21 @@ Route::get('/force-admin', function () {
             ]
         );
 
-        // 2. Paksa isi data menu & latihan
-        Artisan::call('db:seed', [
-            '--class' => 'MegaPlanSeeder',
-            '--force' => true
-        ]);
+        // 2. Suntik Data Menu Premium
+        Artisan::call('db:seed', ['--class' => 'MegaPlanSeeder', '--force' => true]);
 
-        // 3. Isi data grafik dummy (7 hari terakhir) agar grafik muncul
+        // 3. SOLUSI GRAFIK: Suntik Histori 7 Hari Terakhir
+        // Ini akan mengisi tabel visitor_logs agar grafik memiliki lekukan (naik-turun)
         for ($i = 0; $i < 7; $i++) {
             DB::table('visitor_logs')->updateOrInsert(
                 ['visit_date' => now()->subDays($i)->format('Y-m-d')],
-                ['count' => rand(20, 50)]
+                ['count' => rand(20, 50)] // Memberikan data acak 20-50 pengunjung per hari
             );
         }
 
-        return "✅ BERHASIL! Akun Admin & Grafik telah dipulihkan. Silakan login.";
+        return "✅ TRAFIK BERHASIL DISIMULASI! Silakan refresh halaman Admin.";
     } catch (\Exception $e) {
-        return "❌ Masih Error: " . $e->getMessage();
+        return "❌ Gagal: " . $e->getMessage();
     }
 });
 
@@ -46,7 +43,7 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-// --- Jalur Publik (Google Login & Midtrans) ---
+// --- Jalur Publik ---
 Route::get('auth/google', [FitmealController::class, 'redirectToGoogle'])->name('google.login');
 Route::get('auth/google/callback', [FitmealController::class, 'handleGoogleCallback']);
 Route::post('midtrans-webhook', [FitmealController::class, 'webhook']);
@@ -56,8 +53,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [FitmealController::class, 'dashboard'])->name('dashboard');
     Route::post('/bmi', [FitmealController::class, 'bmi'])->name('bmi');
     Route::post('/pay', [FitmealController::class, 'subscribe'])->name('pay');
-
-    // --- ROUTE PROFILE ---
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
