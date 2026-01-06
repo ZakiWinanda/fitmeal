@@ -10,6 +10,7 @@ return new class extends Migration {
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
+            $table->timestamp('email_verified_at')->nullable(); // Ditambahkan agar tidak error saat seeder/update
             $table->string('password')->nullable();
             $table->string('google_id')->nullable();
             $table->string('role')->default('user');
@@ -20,16 +21,16 @@ return new class extends Migration {
             $table->timestamps();
         });
 
-        // Tabel Daily Plans (Menu & Olahraga)
+        // Tabel Daily Plans (Menu & Olahraga - Fitur Premium)
         Schema::create('daily_plans', function (Blueprint $table) {
             $table->id();
             $table->date('plan_date');
             $table->string('type');
-            $table->string('category')->nullable(); // Ditambahkan untuk target BMI
+            $table->string('category')->nullable(); // Untuk target BMI
             $table->string('title');
             $table->text('description')->nullable(); 
             $table->integer('calories')->default(0);
-            $table->text('instructions')->nullable(); // Ditambahkan untuk cara pembuatan/latihan
+            $table->text('instructions')->nullable(); // Untuk instruksi memasak/latihan
             $table->timestamps();
         });
 
@@ -61,7 +62,7 @@ return new class extends Migration {
             $table->integer('expiration');
         });
 
-        // Tabel Visitor Logs (Statistik Pengunjung)
+        // Tabel Visitor Logs
         Schema::create('visitor_logs', function (Blueprint $table) {
             $table->id();
             $table->date('visit_date');
