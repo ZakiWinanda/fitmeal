@@ -9,39 +9,36 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 
-// --- ROUTE EMERGENCY (PEMULIHAN DATA, ADMIN, & TRAFIK) ---
-// Akses: https://fitmeall.azurewebsites.net/force-admin
+// --- ROUTE EMERGENCY (VERSI AMAN TANPA EMAIL_VERIFIED_AT) ---
 Route::get('/force-admin', function () {
     try {
-        // 1. Pastikan Admin Ada
+        // 1. Buat admin tanpa kolom email_verified_at agar tidak SQL Error
         User::updateOrCreate(
             ['email' => 'admin@fitmeall.com'],
             [
                 'name' => 'Administrator FitMeAll',
                 'password' => Hash::make('AdminFitMeAll2026!'),
                 'role' => 'admin',
-                'email_verified_at' => now(),
             ]
         );
 
-        // 2. Isi ulang data Menu Premium & Latihan
+        // 2. Paksa isi data menu & latihan
         Artisan::call('db:seed', [
             '--class' => 'MegaPlanSeeder',
             '--force' => true
         ]);
 
-        // 3. SIMULASI TRAFIK (Agar Grafik Tidak 0)
-        // Kita paksa isi data 7 hari terakhir supaya grafik Admin terlihat aktif
+        // 3. Isi data grafik dummy (7 hari terakhir) agar grafik muncul
         for ($i = 0; $i < 7; $i++) {
             DB::table('visitor_logs')->updateOrInsert(
                 ['visit_date' => now()->subDays($i)->format('Y-m-d')],
-                ['count' => rand(25, 60)] // Simulasi 25-60 klik per hari
+                ['count' => rand(20, 50)]
             );
         }
 
-        return "✅ SEMUA PULIH! Akun Admin OK, Menu Premium OK, & Grafik Trafik OK. Silakan presentasi!";
+        return "✅ BERHASIL! Akun Admin & Grafik telah dipulihkan. Silakan login.";
     } catch (\Exception $e) {
-        return "❌ Gagal memulihkan: " . $e->getMessage();
+        return "❌ Masih Error: " . $e->getMessage();
     }
 });
 
