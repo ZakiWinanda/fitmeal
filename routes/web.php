@@ -6,25 +6,24 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Http\Request;
 use App\Models\User; 
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Artisan; // Penting untuk menjalankan seeder via URL
+use Illuminate\Support\Facades\Artisan;
 
 // --- ROUTE EMERGENCY (PEMULIHAN DATA & ADMIN) ---
 // Akses: https://fitmeall.azurewebsites.net/force-admin
 Route::get('/force-admin', function () {
     try {
-        // 1. Buat ulang User Admin
+        // 1. Buat ulang User Admin (Versi aman tanpa kolom bermasalah)
         User::updateOrCreate(
             ['email' => 'admin@fitmeall.com'],
             [
-                'name' => 'Admin Paksa',
+                'name' => 'Administrator FitMeAll',
                 'password' => Hash::make('AdminFitMeAll2026!'),
                 'role' => 'admin',
-                'email_verified_at' => now(),
             ]
         );
 
         // 2. Paksa isi ulang data Menu & Olahraga (Fitur Premium)
-        // Ini akan menjalankan MegaPlanSeeder untuk mengisi tabel daily_plans yang kosong
+        // Ini akan menarik kembali data dari MegaPlanSeeder ke tabel daily_plans
         Artisan::call('db:seed', [
             '--class' => 'MegaPlanSeeder',
             '--force' => true
