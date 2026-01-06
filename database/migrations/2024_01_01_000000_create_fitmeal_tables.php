@@ -23,9 +23,11 @@ return new class extends Migration {
             $table->id();
             $table->date('plan_date');
             $table->string('type');
+            $table->string('category')->nullable(); // Ditambahkan untuk target BMI
             $table->string('title');
-            $table->text('description');
+            $table->text('description')->nullable(); // Dibuat nullable agar tidak error jika kosong
             $table->integer('calories')->default(0);
+            $table->text('instructions')->nullable(); // Ditambahkan untuk cara pembuatan/latihan
             $table->timestamps();
         });
 
