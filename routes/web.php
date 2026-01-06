@@ -4,22 +4,36 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\FitmealController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Http\Request;
-use App\Models\User; // Tambahan untuk force-admin
-use Illuminate\Support\Facades\Hash; // Tambahan untuk force-admin
+use App\Models\User; 
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Artisan; // Penting untuk menjalankan seeder via URL
 
-// --- ROUTE EMERGENCY (Pancingan Admin) ---
+// --- ROUTE EMERGENCY (PEMULIHAN DATA & ADMIN) ---
 // Akses: https://fitmeall.azurewebsites.net/force-admin
 Route::get('/force-admin', function () {
-    $user = User::updateOrCreate(
-        ['email' => 'admin@fitmeall.com'],
-        [
-            'name' => 'Admin Paksa',
-            'password' => Hash::make('AdminFitMeAll2026!'),
-            'role' => 'admin',
-            'email_verified_at' => now(),
-        ]
-    );
-    return "Akun Admin Berhasil Dibuat/Diperbarui! Silakan kembali ke halaman /login";
+    try {
+        // 1. Buat ulang User Admin
+        User::updateOrCreate(
+            ['email' => 'admin@fitmeall.com'],
+            [
+                'name' => 'Admin Fitmeal',
+                'password' => Hash::make('AdminFitMeAll2026!'),
+                'role' => 'admin',
+                'email_verified_at' => now(),
+            ]
+        );
+
+        // 2. Paksa isi ulang data Menu & Olahraga (Fitur Premium)
+        // Ini akan menjalankan MegaPlanSeeder untuk mengisi tabel daily_plans yang kosong
+        Artisan::call('db:seed', [
+            '--class' => 'MegaPlanSeeder',
+            '--force' => true
+        ]);
+
+        return "✅ DATA PULIH! Akun Admin siap & Menu Premium telah diisi ulang. Silakan cek Dashboard Premium.";
+    } catch (\Exception $e) {
+        return "❌ Gagal memulihkan data: " . $e->getMessage();
+    }
 });
 
 Route::get('/', function () {
