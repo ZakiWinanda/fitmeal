@@ -17,16 +17,16 @@ php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
-# --- BAGIAN 3: DATABASE RESET & SEEDING ---
-echo "⌛ Resetting Database structure..."
+# --- BAGIAN 3: DATABASE MIGRATION (AMAN) ---
+echo "⌛ Running Migration..."
 
-# PERHATIAN: migrate:fresh akan menghapus semua tabel dan membuat ulang.
-# Ini penting agar kolom 'category' dan 'instructions' muncul di database Azure.
-php artisan migrate:fresh --seed --force || echo "⚠️ Database reset failed"
+# Menggunakan migrate biasa agar data tidak hilang. 
+# Ini hanya akan menambah kolom baru jika ada perubahan di file migrasi.
+php artisan migrate --force || echo "⚠️ Migration skipped/failed"
 
-# Jalankan kembali seeder khusus untuk memastikan data menu/admin masuk
-echo "🌱 Running Specific Seeder (MegaPlanSeeder)..."
-php artisan db:seed --class=MegaPlanSeeder --force || echo "⚠️ MegaPlanSeeder failed"
+# SEEDER DINONAKTIFKAN DI SINI:
+# Kita tidak menjalankan seeder otomatis di sini agar tidak terjadi duplikasi data.
+# Pemulihan data dilakukan satu kali saja via URL /force-admin yang sudah kita buat.
 
 # --- BAGIAN 4: PERMISSION & START ---
 php artisan storage:link || true
