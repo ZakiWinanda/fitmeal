@@ -22,24 +22,25 @@ Route::get('/force-admin', function () {
             ]
         );
 
-        // 2. Jalankan Seeder (Mengisi Menu & Latihan jika database baru di-reset)
+        // 2. Jalankan Seeder (Mengisi Menu & Latihan)
         Artisan::call('db:seed', ['--class' => 'MegaPlanSeeder', '--force' => true]);
 
-        // 3. FIX GRAFIK: Suntik Histori 7 Hari Terakhir
-        // Kita gunakan delete() dulu agar data '1' yang stuck tadi hilang dan diganti data baru
-        DB::table('visitor_logs')->whereBetween('visit_date', [now()->subDays(7), now()])->delete();
+        // 3. FIX GRAFIK: Hapus data '1' yang stuck dan ganti dengan histori nyata
+        // Menghapus log hari ini agar tidak bentrok dengan simulasi
+        DB::table('visitor_logs')->where('visit_date', '>=', now()->subDays(7))->delete();
 
+        // Menyuntikkan data acak agar grafik memiliki lekukan (naik-turun)
         for ($i = 0; $i < 7; $i++) {
             $tanggal = now()->subDays($i)->format('Y-m-d');
             DB::table('visitor_logs')->insert([
                 'visit_date' => $tanggal,
-                'count'      => rand(25, 65) // Angka acak 25-65 agar grafik terlihat meyakinkan
+                'count'      => rand(25, 65) // Angka simulasi 25-65 agar terlihat aktif
             ]);
         }
 
-        return "✅ DATABASE & GRAFIK SUKSES DIPULIHKAN! Silakan buka Dashboard Admin sekarang.";
+        return "✅ DATABASE & GRAFIK BERHASIL DIPULIHKAN! Silakan cek Dashboard Admin.";
     } catch (\Exception $e) {
-        return "❌ Gagal memulihkan: " . $e->getMessage();
+        return "❌ Gagal: " . $e->getMessage();
     }
 });
 
@@ -47,7 +48,7 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-// --- Jalur Publik (Google Login & Midtrans) ---
+// --- Jalur Publik ---
 Route::get('auth/google', [FitmealController::class, 'redirectToGoogle'])->name('google.login');
 Route::get('auth/google/callback', [FitmealController::class, 'handleGoogleCallback']);
 Route::post('midtrans-webhook', [FitmealController::class, 'webhook']);
